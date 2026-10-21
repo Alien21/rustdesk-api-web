@@ -4,21 +4,24 @@ import * as dotenv from 'dotenv'
 import * as fs from 'fs'
 import vue from '@vitejs/plugin-vue'
 
+const projectRoot = fs.realpathSync(__dirname)
+
 const NODE_ENV = process.env.NODE_ENV || 'development'
-const envFile = `.env.${NODE_ENV}`
+const envFile = path.join(projectRoot, `.env.${NODE_ENV}`)
 const envConfig = dotenv.parse(fs.readFileSync(envFile))
 for (const k in envConfig) {
   process.env[k] = envConfig[k]
 }
 
 let alias = {
-  '@': path.resolve(__dirname, './src'),
+  '@': path.resolve(projectRoot, './src'),
   'vue$': 'vue/dist/vue.runtime.esm-bundler.js',
 }
 
 const conf = {
+  cacheDir: 'artifacts/cache/vite',
   base: './', // index.html文件所在位置
-  root: './', // js导入的资源路径，src
+  root: projectRoot, // js导入的资源路径，src
   server: {
     open: true,
     port: process.env.VITE_DEV_PORT,
@@ -36,7 +39,7 @@ const conf = {
     manifest: false, // 是否产出maifest.json
     sourcemap: false, // 是否产出soucemap.json
     emptyOutDir: true,
-    outDir: 'dist', // 产出目录
+    outDir: 'artifacts/publish/web', // 产出目录
     rollupOptions: {
       output: {
         manualChunks (id) {
