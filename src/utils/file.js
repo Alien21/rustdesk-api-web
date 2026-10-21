@@ -33,14 +33,24 @@ export function b64_to_utf8 (str) {
   return decodeURIComponent(escape(window.atob(str)))
 }
 
+export function unquoteCsvCell (value) {
+  return value.trim().replace(/^"|"$/g, '').replaceAll('""', '"')
+}
+
 export function jsonToCsv (data) {
-  let csv = ''
-  let keys = Object.keys(data[0])
-  csv += keys.join(',') + '\n'
-  data.forEach(row => {
-    csv += keys.map(key => `"${row[key].toString().replaceAll('"', '""')}"`).join(',') + '\n'
-  })
-  return new Blob([csv], { type: 'text/csv' })
+  const cell = value => {
+    let text = String(value ?? '')
+    // CSV quoting alone does not stop spreadsheet formula execution.
+    if (/^[\s\u0000-\u001f]*[=+@-]/u.test(text) || /^[\t\r\n]/u.test(text)) {
+      text = "'" + text
+    }
+    return `"${text.replaceAll('"', '""')}"`
+  }
+  const keys = Object.keys(data[0] || {})
+  const rows = keys.length
+    ? [keys.map(cell).join(','), ...data.map(row => keys.map(key => cell(row[key])).join(','))]
+    : []
+  return new Blob([rows.join('\r\n')], { type: 'text/csv;charset=utf-8' })
 }
 
 export function downBlob (blob, filename) {

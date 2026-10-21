@@ -237,7 +237,7 @@
   import { toWebClientLink } from '@/utils/webclient'
   import { T } from '@/utils/i18n'
   import { timeAgo } from '@/utils/time'
-  import { jsonToCsv, downBlob } from '@/utils/file'
+  import { jsonToCsv, downBlob, unquoteCsvCell } from '@/utils/file'
   import { loadAllUsers } from '@/global'
   import { useAppStore } from '@/store/app'
   import { connectByClient } from '@/utils/peer'
@@ -411,13 +411,13 @@
       console.log(data)
       //组装数据
       const rows = data.split('\n')
-      const keys = rows[0].split(',')
+      const keys = rows[0].split(',').map(unquoteCsvCell)
       console.log(keys, rows.slice(1).map(row => row.split(',')))
       const values = rows.slice(1).map(row => {
         const obj = {}
         row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).forEach((v, i) => {
           //去掉两边的"
-          obj[keys[i]] = v.trim().replace(/^"|"$/g, '')
+          obj[keys[i]] = unquoteCsvCell(v)
         })
         return obj
       }).filter(item => item.id)

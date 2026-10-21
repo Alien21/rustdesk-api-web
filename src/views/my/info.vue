@@ -46,7 +46,7 @@
   import { myOauth } from '@/api/user'
   import { ElMessageBox } from 'element-plus'
   import { T } from '@/utils/i18n'
-  import { marked } from 'marked'
+  import { renderMarkdown } from '@/utils/markdown'
 
   const appStore = useAppStore()
   const userStore = useUserStore()
@@ -86,7 +86,7 @@
 
   }
 
-  const html = computed(_ => marked(appStore.setting.hello||''))
+  const html = computed(_ => renderMarkdown(appStore.setting.hello || ''))
 
 </script>
 

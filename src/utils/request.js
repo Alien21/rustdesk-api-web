@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { getToken, removeToken } from '@/utils/auth'
+import { getToken } from '@/utils/auth'
 import { useUserStore } from '@/store/user'
 import { pinia } from '@/store'
 import { useAppStore } from '@/store/app'
@@ -70,7 +70,7 @@ service.interceptors.response.use(
       })
 
       if (res.code === 403) {
-        removeToken()
+        useUserStore(pinia).logout()
         window.location.reload()
       }
       return Promise.reject(res)

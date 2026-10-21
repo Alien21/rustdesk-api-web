@@ -1,0 +1,26 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Markdown security regression</title>
+<body data-result="pending">
+<pre id="result">Running Markdown regression…</pre>
+<script type="module">
+  import { renderMarkdown } from '/src/utils/markdown.js'
+  const check = (value, message) => { if (!value) throw new Error(message) }
+  try {
+    const output = document.createElement('div')
+    output.innerHTML = renderMarkdown('# Welcome\n\n**Bold** and [docs](https://example.test).\n\n| A | B |\n| - | - |\n| 1 | 2 |\n\n<img src="missing" onerror="window.xss=1"><script>window.xss=2<\/script><a href="javascript:window.xss=3">bad link</a><svg onload="window.xss=4"></svg>')
+    check(output.querySelector('h1')?.textContent === 'Welcome', 'Markdown heading missing')
+    check(output.querySelector('strong')?.textContent === 'Bold', 'Markdown emphasis missing')
+    check(output.querySelector('table td')?.textContent === '1', 'Markdown table missing')
+    check(output.querySelector('a[href="https://example.test"]'), 'Safe link missing')
+    check(output.querySelector('img'), 'Ordinary image missing')
+    check(!output.querySelector('script,svg,[onerror],[onload],[href^="javascript:"]'), 'Executable HTML survived sanitization')
+    check(window.xss === undefined, 'Attack executed')
+    document.body.dataset.result = 'passed'
+    document.getElementById('result').textContent = 'PASS: Markdown formatting preserved; executable HTML removed.'
+  } catch (error) {
+    document.body.dataset.result = 'failed'
+    document.getElementById('result').textContent = `FAIL: ${error.message}`
+    throw error
+  }
+</script>
