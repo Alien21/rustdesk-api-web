@@ -6,6 +6,56 @@ import vue from '@vitejs/plugin-vue'
 
 const projectRoot = fs.realpathSync(__dirname)
 
+const centralArtifacts = process.env.RUSTDESK_ARTIFACTS_DIR
+let artifactNamespace
+if (centralArtifacts) {
+  if (!path.isAbsolute(centralArtifacts)) {
+    throw new Error('RUSTDESK_ARTIFACTS_DIR must be an absolute central directory')
+  }
+  artifactNamespace = path.join(path.resolve(centralArtifacts), 'rustdesk-api-web')
+}
+
+function centralArtifactPath (...parts) {
+  const destination = path.join(artifactNamespace, ...parts)
+  let existing = destination
+  for (let current = destination; ; current = path.dirname(current)) {
+    let info
+    try {
+      info = fs.lstatSync(current)
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error
+    }
+    if (info && (info.isSymbolicLink() || !info.isDirectory())) {
+      throw new Error(`Refusing redirected artifact directory: ${current}`)
+    }
+    if (path.dirname(current) === current) break
+  }
+  while (!fs.existsSync(existing)) {
+    const parent = path.dirname(existing)
+    if (parent === existing) {
+      throw new Error(`Artifact filesystem root is unavailable: ${existing}`)
+    }
+    existing = parent
+  }
+  const canonical = path.resolve(fs.realpathSync.native(existing), path.relative(existing, destination))
+  const source = fs.realpathSync.native(projectRoot)
+  const inside = (parent, value) => {
+    const relative = path.relative(parent, value)
+    return relative === '' || (relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative))
+  }
+  if (inside(source, canonical) || inside(canonical, source)) {
+    throw new Error('Central build outputs must be separate from the source directory')
+  }
+  return destination
+}
+
+const viteCache = artifactNamespace
+  ? centralArtifactPath('cache', 'vite', `${process.platform}-${process.arch}`)
+  : 'artifacts/cache/vite'
+const webOutput = artifactNamespace
+  ? centralArtifactPath('publish', 'web')
+  : 'artifacts/publish/web'
+
 const NODE_ENV = process.env.NODE_ENV || 'development'
 const envFile = path.join(projectRoot, `.env.${NODE_ENV}`)
 const envConfig = dotenv.parse(fs.readFileSync(envFile))
@@ -19,7 +69,7 @@ let alias = {
 }
 
 const conf = {
-  cacheDir: 'artifacts/cache/vite',
+  cacheDir: viteCache,
   base: './', // index.html文件所在位置
   root: projectRoot, // js导入的资源路径，src
   server: {
@@ -39,7 +89,7 @@ const conf = {
     manifest: false, // 是否产出maifest.json
     sourcemap: false, // 是否产出soucemap.json
     emptyOutDir: true,
-    outDir: 'artifacts/publish/web', // 产出目录
+    outDir: webOutput, // 产出目录
     rollupOptions: {
       output: {
         manualChunks (id) {

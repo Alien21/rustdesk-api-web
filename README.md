@@ -41,3 +41,14 @@ For future updates, fetch the candidate branch without merging, find its common 
 `npm test` runs CSV and real-Pinia logout regressions. With the Vite development server running, open `/tests/markdown.browser.html` for the DOMPurify regression; it must report `PASS` while preserving headings, emphasis, tables, safe links and images.
 
 A local compatibility follow-up decodes quoted headers and escaped quotes in the existing peer CSV importer, preserving exported peer IDs on re-import.
+
+## Build output locations
+
+Standalone `npm run build` writes `artifacts/publish/web/` and uses `artifacts/cache/vite/`. The workspace launcher sets the absolute `RUSTDESK_ARTIFACTS_DIR` base, normally `C:/Git/RustDesk/artifacts` (WSL: `/mnt/c/Git/RustDesk/artifacts`). Vite then uses:
+
+- `<base>/rustdesk-api-web/publish/web/` for the web bundle.
+- `<base>/rustdesk-api-web/cache/vite/<platform>-<arch>/` for its cache.
+
+The namespace is fixed to `rustdesk-api-web`; redirected directories and output/cache paths overlapping the source checkout are rejected. Linux builds use an isolated source stage below the same namespace's `build/` directory. Unsetting the environment variable preserves standalone and CI paths.
+
+`node_modules/` is the package manager's dependency tree. Dependency packages may contain their own directories named `artifacts`; those are package contents and must stay with the package. Selecting the shared output root does not move installed dependencies or existing artifacts.
