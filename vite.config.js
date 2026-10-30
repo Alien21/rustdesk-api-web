@@ -6,17 +6,15 @@ import vue from '@vitejs/plugin-vue'
 
 const projectRoot = fs.realpathSync(__dirname)
 
-const centralArtifacts = process.env.RUSTDESK_ARTIFACTS_DIR
-let artifactNamespace
-if (centralArtifacts) {
-  if (!path.isAbsolute(centralArtifacts)) {
-    throw new Error('RUSTDESK_ARTIFACTS_DIR must be an absolute central directory')
-  }
-  artifactNamespace = path.join(path.resolve(centralArtifacts), 'rustdesk-api-web')
+const centralArtifacts = process.env.RUSTDESK_ARTIFACTS_DIR || path.resolve(projectRoot, '..', 'artifacts')
+if (!path.isAbsolute(centralArtifacts)) {
+  throw new Error('RUSTDESK_ARTIFACTS_DIR must be an absolute central directory')
 }
+const artifactNamespace = path.join(path.resolve(centralArtifacts), 'rustdesk-api-web')
+const toolNamespace = path.join(path.resolve(centralArtifacts), 'tools', 'rustdesk-api-web')
 
-function centralArtifactPath (...parts) {
-  const destination = path.join(artifactNamespace, ...parts)
+function centralArtifactPath (namespace, ...parts) {
+  const destination = path.join(namespace, ...parts)
   let existing = destination
   for (let current = destination; ; current = path.dirname(current)) {
     let info
@@ -49,12 +47,8 @@ function centralArtifactPath (...parts) {
   return destination
 }
 
-const viteCache = artifactNamespace
-  ? centralArtifactPath('cache', 'vite', `${process.platform}-${process.arch}`)
-  : 'artifacts/cache/vite'
-const webOutput = artifactNamespace
-  ? centralArtifactPath('publish', 'web')
-  : 'artifacts/publish/web'
+const viteCache = centralArtifactPath(toolNamespace, 'vite', `${process.platform}-${process.arch}`)
+const webOutput = centralArtifactPath(artifactNamespace, 'publish', 'web')
 
 const NODE_ENV = process.env.NODE_ENV || 'development'
 const envFile = path.join(projectRoot, `.env.${NODE_ENV}`)

@@ -44,11 +44,11 @@ A local compatibility follow-up decodes quoted headers and escaped quotes in the
 
 ## Build output locations
 
-Standalone `npm run build` writes `artifacts/publish/web/` and uses `artifacts/cache/vite/`. The workspace launcher sets the absolute `RUSTDESK_ARTIFACTS_DIR` base, normally `C:/Git/RustDesk/artifacts` (WSL: `/mnt/c/Git/RustDesk/artifacts`). Vite then uses:
+Use the workspace launchers in [README.build.md](README.build.md); npm runs only in their staged copies. The source checkout is an input. Vite defaults to the sibling `../artifacts/` base. An absolute `RUSTDESK_ARTIFACTS_DIR` overrides that base, normally `C:/Git/RustDesk/artifacts` (WSL: `/mnt/c/Git/RustDesk/artifacts`):
 
 - `<base>/rustdesk-api-web/publish/web/` for the web bundle.
-- `<base>/rustdesk-api-web/cache/vite/<platform>-<arch>/` for its cache.
+- `<base>/tools/rustdesk-api-web/vite/<platform>-<arch>/` for its cache.
 
-The namespace is fixed to `rustdesk-api-web`; redirected directories and output/cache paths overlapping the source checkout are rejected. Linux builds use an isolated source stage below the same namespace's `build/` directory. Unsetting the environment variable preserves standalone and CI paths.
+The project namespace is fixed to `rustdesk-api-web`; redirected directories and output/cache paths overlapping the input are rejected. Windows and Linux launchers use isolated copies below `build/windows-amd64/source/` and `build/linux-amd64/source/`. Unsetting the environment variable keeps the sibling workspace layout; CI selects its output directory explicitly.
 
-`node_modules/` is the package manager's dependency tree. Dependency packages may contain their own directories named `artifacts`; those are package contents and must stay with the package. Selecting the shared output root does not move installed dependencies or existing artifacts.
+`node_modules/` lives in the staged copy. Dependency packages may contain their own directories named `artifacts`; those are package contents and must stay with the package. Selecting the shared output root does not move existing dependencies or artifacts.
